@@ -4,56 +4,23 @@
 #include "message/IoServer.h"
 #include "message/qtMessageWorkManage.h"
 
-class ParesOne : public QtMessageParse
-{
-public:
-    ParesOne(){}
-    virtual ~ParesOne(){}
-
-    //得到定长头的长度
-    virtual int GetConstHeaderLength(void){return 4;}
-
-    //得到包的长度
-    virtual int GetPackLength(qtMessage* pMsg){return 10;}
-
-    //得到包体的长度
-    virtual int GetBodyLength(qtMessage* pMsg){return 10;}
-};
-
-class WorkOne : public qtMessageWorkManage
-{
-public:
-    WorkOne() : qtMessageWorkManage(){}
-    virtual ~WorkOne(){}
-
-    virtual bool Work(qtMessage* pMsg)
-    {
-        qDebug() << pMsg->m_data;
-        return true;
-    }
-};
+#include "termKeda/TermServiceKeda.h"
+#include "termKeda/TermListKeda.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
-    ParesOne parse;
-    WorkOne work;
-    qtMessageQueue queue;
-    qtMessagePool pool;
+    CTermListKeda listTerm;
+    CTermServiceKeda server;
 
-    IOServer server(3698);
+    QtMysqlManage DbConPool;
 
-    work.Start(&queue);
-    server.init(&parse, &queue, &pool);
+    int nDbRes = DbConPool.Init("127.0.0.1", "root",
+                                "123456", "lanaya", 3306);
 
-    server.run();
-
-
-//    QtMysqlManage DbConPool;
-
-//    int nDbRes = DbConPool.Init("127.0.0.1", "root",
-//                                "123456", "lanaya", 3306);
+    listTerm.Init(&DbConPool);
+    server.Start(&listTerm);
 
 //    if(nDbRes == -1)
 //    {

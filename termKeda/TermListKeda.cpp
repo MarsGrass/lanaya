@@ -6,6 +6,10 @@ CTermListKeda::CTermListKeda(void)
     mysql_ = NULL;
 }
 
+CTermListKeda::CTermListKeda(QtMysqlManage* pMysql, int check_time)
+{
+    Init(pMysql, check_time);
+}
 
 CTermListKeda::~CTermListKeda(void)
 {
@@ -16,40 +20,39 @@ int CTermListKeda::Init(QtMysqlManage* pMysql, int check_time)
     qDebug()<< "CTermListKeda::Init";
 
     mysql_ = pMysql;
-
-	int nRes;
     check_time_ = check_time;
 
     QtMysqlObj* pMysqlObj = mysql_->GetMysqlObj();
-    if(pMysqlObj == NULL)
-	{
+    if(pMysqlObj == NULL){
         qDebug()<< "CTermListKeda::Init failed";
         return -1;
 	}
 
-    QVector<QVector<QString>> Querydata;
-    bool bQuery = pMysqlObj->ExeQuery("select term_id, sn, name from Keda_term;", Querydata);
-	if(bQuery == false)
-	{
-        qDebug()<< "select term_id, sn, name from Keda_term; failed";
-	}	
-	else
-	{
-        int nSize = Querydata.size();
-		if(nSize > 0) //表明能够查询到数据
-		{
-			for (int i = 0; i < nSize; i++)
-			{
-                QString id = Querydata[i][0];
-                QString sn = Querydata[i][1];
-                QString name = Querydata[i][2];
+//    QVector<QVector<QString>> Querydata;
+//    bool bQuery = pMysqlObj->ExeQuery("select term_id, sn, name from Keda_term;", Querydata);
+//	if(bQuery == false)
+//	{
+//        qDebug()<< "select term_id, sn, name from Keda_term; failed";
+//	}
+//	else
+//	{
+//        int nSize = Querydata.size();
+//		if(nSize > 0) //表明能够查询到数据
+//		{
+//			for (int i = 0; i < nSize; i++)
+//			{
+//                QString id = Querydata[i][0];
+//                QString sn = Querydata[i][1];
+//                QString name = Querydata[i][2];
 
-				CTermKeda* pTerm = AddTerm(sn);
-				pTerm->SetId(atoi(id.c_str()));
-				pTerm->m_strName = name;
-			}
-		}
-	}
+//                CTermKeda* pTerm = new CTermKeda(mysql_, sn);
+//                pTerm->m_nNumId = id.toInt();
+//                pTerm->m_strName = name;
+
+//                term_map_.insert(sn, pTerm);
+//			}
+//		}
+//	}
 
 	TermMap::iterator it = term_map_.begin();
     for(; it != term_map_.end(); it++)
@@ -71,26 +74,23 @@ void CTermListKeda::UnInit()
 {
 }
 
-bool CTermListKeda::IsTermExsit(std::string strTermSn)
+bool CTermListKeda::IsTermExsit(const QString& strTermSn)
 {
-	HD_TRACE(MORPHING, "CTermListKeda::IsTermExsit %p\n", this);
-
     ReadLock readLock(mutex);
 
     TermMap::iterator it = term_map_.find(strTermSn);
     return (it == term_map_.end());
 }
 
-CTermKeda* CTermListKeda::GetTermBySn(std::string strTermSn, bool auto_add)
+CTermKeda* CTermListKeda::GetTermBySn(const QString& strTermSn, bool auto_add)
 {
-
     {
         ReadLock readLock(mutex);
 
         TermMap::iterator it = term_map_.find(strTermSn);
         if(it != term_map_.end())
         {
-            return it->second;
+            return it.value();
         }
     }
 
@@ -102,36 +102,36 @@ CTermKeda* CTermListKeda::GetTermBySn(std::string strTermSn, bool auto_add)
     return NULL;
 }
 
-CTermKeda* CTermListKeda::GetTermById(int term_id)
-{
-    {
-        ReadLock readLock(mutex);
+//CTermKeda* CTermListKeda::GetTermById(int term_id)
+//{
+//    {
+//        ReadLock readLock(mutex);
 
-		TermMap::iterator itr = term_map_.begin();
-		for(; itr != term_map_.end(); itr++)
-		{
-			if(itr->second->m_nNumId == term_id)
-			{
-				return  itr->second;
-			}
-		}
-    }
+//		TermMap::iterator itr = term_map_.begin();
+//		for(; itr != term_map_.end(); itr++)
+//		{
+//            if(itr.value()->m_nNumId == term_id)
+//			{
+//                return  itr.value();
+//			}
+//		}
+//    }
 
-    return NULL;
-}
+//    return NULL;
+//}
 
 
-CTermKeda* CTermListKeda::AddTerm(std::string strTermSn)
+CTermKeda* CTermListKeda::AddTerm(const QString& strTermSn)
 {
     WriteLock writeLock(mutex);
 
-	CTermKeda* pTerm = new CTermKeda(strTermSn);
-    term_map_[strTermSn] = pTerm;
+    CTermKeda* pTerm = new CTermKeda(mysql_, strTermSn);
+    term_map_.insert(strTermSn, pTerm);
 
     return pTerm;
 }
 
-void CTermListKeda::DelelteTerm(std::string strTermSn)
+void CTermListKeda::DelelteTerm(const QString& strTermSn)
 {
 	WriteLock writeLock(mutex);
 
@@ -142,27 +142,27 @@ void CTermListKeda::DelelteTerm(std::string strTermSn)
     }
 }
 
-void CTermListKeda::DeleteTermById(int term_id)
-{
-	WriteLock writeLock(mutex);
+//void CTermListKeda::DeleteTermById(int term_id)
+//{
+//	WriteLock writeLock(mutex);
 
-	TermMap::iterator itr = term_map_.begin();
-	for(; itr != term_map_.end(); itr++)
-	{
-		if(itr->second->m_nNumId == term_id)
-		{
-			term_map_.erase(itr);
-			return ;
-		}
-	}
-}
+//	TermMap::iterator itr = term_map_.begin();
+//	for(; itr != term_map_.end(); itr++)
+//	{
+//		if(itr->second->m_nNumId == term_id)
+//		{
+//			term_map_.erase(itr);
+//			return ;
+//		}
+//	}
+//}
 
 void CTermListKeda::Run(void)
 {
 	while(true)
     {
         //获取系统当前时间
-        time_t sec = time(NULL);
+        QTime sec = QTime::currentTime();
 
         {
             ReadLock readLock(mutex);
@@ -171,10 +171,10 @@ void CTermListKeda::Run(void)
             TermMap::iterator it = term_map_.begin();
             for(; it != term_map_.end(); it++)
             {
-				CTermKeda* pTerm = it->second;
+                CTermKeda* pTerm = it.value();
 				if(pTerm->m_online == 1)
 				{
-					pTerm->OnTime(sec, m_pServer);
+                    pTerm->OnTime(sec);
 				}
             }
         }
@@ -187,8 +187,4 @@ void CTermListKeda::Run(void)
     }
 }
 
-void CTermListKeda::BindServer(NS_NET::NetServer* pServer)
-{
-	m_pServer = pServer;
-}
 

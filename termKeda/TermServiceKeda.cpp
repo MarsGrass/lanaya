@@ -14,42 +14,46 @@ TermServiceWorkKeda::~TermServiceWorkKeda(void)
 {
 }
 
-virtual bool TermServiceWorkKeda::Work(qtMessage* pMsg)
-{
-    unsigned char* pByte;
-    char reply[1040] = "";
-    int nLength = DealCommand(pMsg, reply);
-}
-
-int TermServiceWorkKeda::DealCommand(qtMessage* pMsg, char* reply)
+bool TermServiceWorkKeda::Work(qtMessage* pMsg)
 {
     unsigned char* pByte = (unsigned char*)pMsg->m_data.data();
+    char reply[1040] = "";
 
     //网络阻塞暂时不处理
     int res = CheckMsg(pMsg);
     if(res == -1)
     {
         qDebug() << "data error, flag";
-        return -1;
+        return false;
     }
-
-    int termId = 0;
-    bool bExist = true;
 
     char sn[9] = "";
     sprintf(sn, "%02X%02X%02X%02X", pByte[4], pByte[5], pByte[6], pByte[7]);
 
-    CTermKeda* pTermKeda = TermListKeda.GetTermBySn(std::string(sn));
+    CTermKeda* pTermKeda = listTerm_->GetTermBySn(sn);
     if(pTermKeda == NULL)
     {
-
     }
     else
     {
         res = pTermKeda->DoCommand(pMsg, reply);
+
+        if(res > 0)
+        {
+            qtMessage* pMessage = pool_->GetQtMessage();
+            pMessage->m_data.insert(0, reply, res);
+            pMessage->WritePos(res);
+            pTermKeda->SendMsg(pMessage);
+        }
     }
 
-    return res;
+    return true;
+}
+
+void TermServiceWorkKeda::SetPara(CTermListKeda* listTerm, qtMessagePool* pool)
+{
+    listTerm_ = listTerm;
+    pool_ = pool;
 }
 
 int TermServiceWorkKeda::CheckMsg(qtMessage* pMsg)
@@ -87,47 +91,10 @@ int TermServiceWorkKeda::CheckMsg(qtMessage* pMsg)
     return 0;
 }
 
-//读消息
-int TermServiceMsgProcessKeda::HandleRead(NS_NET::Message* pMsg)
-{
-	unsigned char* pByte;
-	char reply[1040] = "";
-	int nLength = DealCommand(pMsg, reply);
-	
-    //收到消息，发送一个回去
-	if(nLength > 0)
-	{
-		unsigned int nType = pMsg->GetMsgType();
-		NS_NET::NET_HANDLE netHandle = pMsg->GetNetHandle();
-		pMsg->Reset();
-
-		pByte = pMsg->WriterPtr();
-		memcpy(pByte, reply, nLength);
-		pMsg->WriterPtr(nLength);
-
-		char binData[4096] = "";
-		for(int i = 0; i < nLength; i++)
-		{
-			sprintf(binData + i*3, " %02X", (unsigned char)reply[i]);
-		}
-		HD_INFO(MORPHING, "发送数据：%s\n", binData);
-
-		pMsg->SetMsgType(nType);
-		pMsg->SetNetHandle(netHandle);
-		m_pServer->AsyncWrite(pMsg);
-	}
-    pMsg->Release();
-	
-    return HD_ENO_SUCCESS;
-}
-
-
-
-/*------------------------------------------------------------------
-CWebService
-------------------------------------------------------------------*/
 CTermServiceKeda::CTermServiceKeda(void)
+    :server_(3698)
 {
+
 }
 
 
@@ -135,29 +102,18 @@ CTermServiceKeda::~CTermServiceKeda(void)
 {
 }
 
-int CTermServiceKeda::Start(std::string strAddress)
+int CTermServiceKeda::Start(CTermListKeda* listTerm)
 {
-	if (m_server.Initialize() != HD_ENO_SUCCESS)
-	{
-		fprintf(stderr, "initialize net error.\n");
-		return HD_ENO_FALSE;
-	}
+    m_process.SetPara(listTerm, &pool_);
+    m_process.Start(&queue_);
 
-	m_process.BindServer(&m_server);
+    server_.init(&m_decode, &queue_, &pool_);
+    server_.run();
 
-	m_hSvrHandle = m_server.CreateServer(strAddress.c_str(), &m_decode, &m_process);
-    if (m_hSvrHandle == INVALID_NET_HANDLE)
-    {
-        fprintf(stderr, "create reactor msg server error.\n");
-        return HD_ENO_FALSE;
-    }
-
-	return HD_ENO_SUCCESS;
+    return 0;
 }
 
 int CTermServiceKeda::Stop()
 {
-	m_server.DestoryHandle(m_hSvrHandle);
-	m_server.Uninitialize();
-	return HD_ENO_SUCCESS;
+    return 0;
 }

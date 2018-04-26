@@ -1,20 +1,19 @@
 ﻿#include "TermKeda.h"
 
-extern QtMysqlManage DbConPool;
+CTermKeda::CTermKeda()
+{
+    m_online = 0;
+    m_last_time = QTime::currentTime();
+    m_pSession = NULL;
+    mysql_ = NULL;
+}
 
 CTermKeda::CTermKeda(QtMysqlManage* mysql, const QString& sn)
     : m_strSn(sn), mysql_(mysql)
 {
 	m_online = 0;
-	m_last_time = time(NULL);
-
+    m_last_time = QTime::currentTime();
     m_pSession = NULL;
-
-
-	for(int i = 0; i < 10; i++)
-	{
-		m_nCurrentData[i] = 0;
- 	}
 }
 
 
@@ -40,8 +39,8 @@ int CTermKeda::DoCommand(qtMessage* pMsg, char* reply)
 		case 0x02:
 			nLength = DataReport(pMsg, reply);
 			break;
-		case 0x03:
-			nLength = HeartBeat(pMsg, reply);
+        case 0x03:
+            nLength = SetPeriod(pMsg, reply);
 			break;
 		default:
 			nLength = 0;
@@ -53,159 +52,88 @@ int CTermKeda::DoCommand(qtMessage* pMsg, char* reply)
 
 int CTermKeda::Login(qtMessage* pMsg, char* reply)
 {
-	unsigned char* pByte = pMsg->ReaderPtr();
+    unsigned char* pByte = (unsigned char*)pMsg->m_data.data();
 
 	reply[0] = 0xFE;
 	reply[1] = 0x00;
-	reply[2] = 0x26;
+    reply[2] = 0x10;
 	reply[3] = 0x01;
-	memcpy(reply + 4, pByte + 4, 32);
-	reply[36] = 0x01;
-	reply[37] = 0xFE; 
+    memcpy(reply + 4, pByte + 4, 11);
+    reply[15] = 0xFE;
 	
-	return 38;
+    return 16;
 }
 
-int CTermKeda::HeartBeat(qtMessage* pMsg, char* reply)
+int CTermKeda::SetPeriod(qtMessage* pMsg, char* reply)
 {
-	unsigned char* pByte = pMsg->ReaderPtr();
-
-	reply[0] = 0XFE;
-	reply[1] = 0x00;
-	reply[2] = 0x26;
-	reply[3] = 0x03;
-	memcpy(reply + 4, pByte + 4, 32);
-	reply[36] = 0x00;
-	reply[37] = 0xFE; 
-	
-	return 38;
+    return 0;
 }
 
 int CTermKeda::DataReport(qtMessage* pMsg, char* reply)
 {
-	unsigned char* pByte = pMsg->ReaderPtr();
+    unsigned char* pByte = (unsigned char*)pMsg->m_data.data();
 	reply[0] = 0xFE;
 	reply[1] = 0x00;
-	reply[2] = 0x26;
+    reply[2] = 0x0A;
 	reply[3] = 0x02;
-	memcpy(reply + 4, pByte + 4, 32);
-	reply[36] = 0x00;
-	reply[37] = 0xFE; 
+    memcpy(reply + 4, pByte + 4, 5);
+    reply[9] = 0xFE;
 
-	return 38;
+    int nDataPos = 9;
+    unsigned int nLength = (unsigned int)pByte[1] * 256 + (unsigned int)pByte[2];
+    int nCount = pByte[nDataPos];
+    if(nLength != nCount * 27 + nDataPos + 2)
+    {
+        qDebug() << "data length error";
+        return 10;
+    }
+
+    for(int i = 0; i < nCount; i++)
+    {
+        unsigned char ntype1, ntype2, ntype3, ntype4, ntypeTime;
+        int nData1, nData2, nData3, nData4;
+        ntype1 = pByte[nDataPos + 1 + i*27];
+        memcpy(&nData1, pByte + nDataPos + 2 + i*27, 4);
+        ntype2 = pByte[nDataPos + 6 + i*27];
+        memcpy(&nData2, pByte + nDataPos + 7 + i*27, 4);
+        ntype3 = pByte[nDataPos + 11 + i*27];
+        memcpy(&nData3, pByte + nDataPos + 12 + i*27, 4);
+        ntype4 = pByte[nDataPos + 16 + i*27];
+        memcpy(&nData4, pByte + nDataPos + 17 + i*27, 4);
+        ntypeTime = pByte[nDataPos + 21 + i*27];
+
+        unsigned char year = pByte[nDataPos + 22 + i*27];
+        unsigned char month = pByte[nDataPos + 23 + i*27];
+        unsigned char day = pByte[nDataPos + 24 + i*27];
+        unsigned char hour = pByte[nDataPos + 25 + i*27];
+        unsigned char min = pByte[nDataPos + 26 + i*27];
+        unsigned char second = pByte[nDataPos + 27 + i*27];
+
+        nData1 = ntohl(nData1);
+        nData2 = ntohl(nData2);
+        nData3 = ntohl(nData3);
+        nData4 = ntohl(nData4);
+
+        year = ((year>>4)&0x0F)*10 + year&0x0F;
+        month = ((month>>4)&0x0F)*10 + month&0x0F;
+        day = ((day>>4)&0x0F)*10 + day&0x0F;
+        hour = ((hour>>4)&0x0F)*10 + hour&0x0F;
+        min = ((min>>4)&0x0F)*10 + min&0x0F;
+        second = ((second>>4)&0x0F)*10 + second&0x0F;
+
+        QDate date(2000+year, month, day);
+        QTime time(hour, min, second);
+
+        QDateTime datetime(date, time);
+
+        QString str = datetime.toString("yyyy-MM-dd HH-mm-ss");
+
+        qDebug() << nData1<< nData2<<nData3<< nData4<<str;
+    }
+
+    return 10;
 }
 
-
-
-int CTermKeda::DataReport(qtMessage* pMsg, char* reply, MySQLInterface* pMySQLInterface)
-{
-	unsigned char* pByte = pMsg->ReaderPtr();
-	unsigned int nLength = (unsigned int)pByte[1] * 256 + (unsigned int)pByte[2];
-	unsigned int dataCount = (unsigned int)pByte[36] * 256 + (unsigned int)pByte[37];
-
-	for(unsigned int i = 0; i < dataCount; i++)
-	{
-		m_nCurrentSensorNo = (unsigned int)pByte[38 + i * 14] * 256 + (unsigned int)pByte[39 + i * 14]; 
-		m_nCurrentSensorMode = (unsigned int)pByte[40 + i * 14];
-
-		char key_sn[256] =""; 
-		sprintf(key_sn, "%s_%d", m_strSn.c_str(),m_nCurrentSensorNo);
-
-		
-		if(m_nCurrentSensorNo == 0xFF)
-		{/*
-			if(m_nCurrentData[i] == -2)//不插入历史数据表		
-			{	
-			}
-			else
-			{
-				m_nCurrentData[i] = -2;
-				char sql[256] ="";
-				sprintf(sql, "insert into Keda_sensor_data (sensor_id, data, upload_time) value (%d, '-2', now());", nSersonId);
-				HD_INFO("MYSQL", "%s\n", sql);
-				pMySQLInterface->writeDataToDB(sql);
-			}*/
-		}
-		else
-		{
-			int nData;
-			unsigned char dataflag = (unsigned char)pByte[47 + i * 14];
-			if(dataflag == 0)
-			{
-				memcpy(&nData, pByte + 48 + i*14, 4);
-				nData = ntohl(nData);
-
-				char strCurrentValue[10] = "";
-				if(m_nCurrentSensorMode == 6) //表示是压强
-				{
-					sprintf(strCurrentValue, "%.3f", (float)nData / 1000);
-				}
-				else
-				{
-					sprintf(strCurrentValue, "%.2f", (float)nData / 100);
-				}
-				m_nCurrentValue = strCurrentValue;
-			}
-			else
-			{
-				char errInfop[10] = "";
-				memcpy(errInfop, pByte + 48 + i*14, 4);
-				m_nCurrentValue = errInfop;
-				if(m_nCurrentValue.find("E001") >= 0)
-				{
-					nData = -1;
-					m_nCurrentValue = "-1";
-				}
-				else if(m_nCurrentValue.find("E003") >= 0)
-				{
-					nData = -3;
-					m_nCurrentValue = "-3";
-				}
-
-			}
-
-			//if(m_nCurrentData[i] == nData)//不插入历史数据表
-			{		
-			}
-			//else
-			{
-				m_nCurrentData[i] = nData;
-				char sql[256] ="";
-				sprintf(sql, "insert into Keda_sensor_data (key_sn, data, upload_time) value ('%s', '%s', now());", key_sn, m_nCurrentValue.c_str());
-				HD_INFO("MYSQL", "%s\n", sql);
-				pMySQLInterface->writeDataToDB(sql);
-			}
-
-			{
-				char sql[256] ="";
-				sprintf(sql, "INSERT INTO Keda_sensor (key_sn, type_id, no, term_id, latest_data, latest_time) VALUES ('%s', %d, %d, %d, '%s', now()) "\
-					"ON DUPLICATE KEY UPDATE latest_time = now(), latest_data = '%s'; ", key_sn, m_nCurrentSensorMode, m_nCurrentSensorNo, m_nNumId, m_nCurrentValue.c_str(), m_nCurrentValue.c_str());
-				HD_INFO("MYSQL", "%s\n", sql);
-				pMySQLInterface->writeDataToDB(sql);
-			}
-		}
-	}
-	
-	reply[0] = 0xFE;
-	reply[1] = 0x00;
-	reply[2] = 0x26;
-	reply[3] = 0x02;
-	memcpy(reply + 4, pByte + 4, 32);
-	reply[36] = 0x00;
-	reply[37] = 0xFE; 
-
-	return 38;
-}
-
-void CTermKeda::SetId(int nNumId)
-{
-	m_nNumId = nNumId;
-}
-
-int CTermKeda::GetId()
-{
-	return m_nNumId;
-}
 
 void CTermKeda::SendMsg(qtMessage* pMsg)
 {
@@ -240,15 +168,15 @@ void CTermKeda::OnTime(QTime sec)
 	{
 		m_online = 0;
 
-		MySQLInterface* pMySQLInterface = DbConPool.GetMysqlCon();
-		if(pMySQLInterface == NULL)
-		{
-			return;
-		}
-		char sql[256] ="";
-		sprintf(sql, "update Keda_term set link_status = 2, run_status = 2 where sn = '%s';", m_strSn.c_str());
-		pMySQLInterface->writeDataToDB(sql);
+//		MySQLInterface* pMySQLInterface = DbConPool.GetMysqlCon();
+//		if(pMySQLInterface == NULL)
+//		{
+//			return;
+//		}
+//		char sql[256] ="";
+//		sprintf(sql, "update Keda_term set link_status = 2, run_status = 2 where sn = '%s';", m_strSn.c_str());
+//		pMySQLInterface->writeDataToDB(sql);
 
-		DbConPool.ReleaseMysqlCon(pMySQLInterface);
+//		DbConPool.ReleaseMysqlCon(pMySQLInterface);
 	}
 }

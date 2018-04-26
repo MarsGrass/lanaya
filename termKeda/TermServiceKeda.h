@@ -5,6 +5,7 @@
 
 #include "message/IoServer.h"
 #include "message/qtMessageWorkManage.h"
+#include "TermListKeda.h"
   
 using namespace boost::asio;
 
@@ -56,12 +57,16 @@ public:
 
     virtual bool Work(qtMessage* pMsg);
 
+    void SetPara(CTermListKeda* listTerm, qtMessagePool* pool);
+
 
 private:
     //处理命令
     int DealCommand(qtMessage* pMsg, char* reply);
     int CheckMsg(qtMessage* pMsg);
 
+    CTermListKeda* listTerm_;
+    qtMessagePool* pool_;
 };
 
 class CTermServiceKeda
@@ -72,7 +77,7 @@ public:
 
 public:
 	//启动服务
-	int Start(std::string strAddress);
+    int Start(CTermListKeda* listTerm);
 
 	//停止服务
 	int Stop();
@@ -83,9 +88,9 @@ public:
 	//解析函数
 	TermServiceMsgDecodeKeda m_decode;
 
-    qtMessageQueue queue;
+    qtMessageQueue queue_;
 
-    qtMessagePool pool;
+    qtMessagePool pool_;
 
-    IOServer server;
+    IOServer server_;
 };
