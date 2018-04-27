@@ -114,12 +114,13 @@ int CTermKeda::DataReport(qtMessage* pMsg, char* reply)
         nData3 = ntohl(nData3);
         nData4 = ntohl(nData4);
 
-        year = ((year>>4)&0x0F)*10 + year&0x0F;
-        month = ((month>>4)&0x0F)*10 + month&0x0F;
-        day = ((day>>4)&0x0F)*10 + day&0x0F;
-        hour = ((hour>>4)&0x0F)*10 + hour&0x0F;
-        min = ((min>>4)&0x0F)*10 + min&0x0F;
-        second = ((second>>4)&0x0F)*10 + second&0x0F;
+        year = year/16*10 + year%16;
+        month = month/16*10 + month%16;
+        day = day/16*10 + day%16;
+        hour = hour/16*10 + hour%16;
+        min = min/16*10 + min%16;
+        second = second/16*10 + second%16;
+
 
         QDate date(2000+year, month, day);
         QTime time(hour, min, second);
