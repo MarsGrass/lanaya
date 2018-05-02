@@ -72,7 +72,7 @@ private:
 class CTermServiceKeda
 {
 public:
-	CTermServiceKeda(void);
+    CTermServiceKeda(int nPort = 3698);
 	~CTermServiceKeda(void);
 
 public:

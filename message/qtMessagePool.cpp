@@ -33,7 +33,7 @@ qtMessage* qtMessagePool::GetQtMessage(unsigned int nMsgSize)
 
     qtMessage* pMessage = m_listMessage.front();
     m_listMessage.pop_front();
-    if(pMessage->m_nSize < nMsgSize)
+    if(pMessage->m_nSize < (int)nMsgSize)
     {
         pMessage->m_data.resize(nMsgSize);
     }

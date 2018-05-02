@@ -91,8 +91,8 @@ int TermServiceWorkKeda::CheckMsg(qtMessage* pMsg)
     return 0;
 }
 
-CTermServiceKeda::CTermServiceKeda(void)
-    :server_(3698)
+CTermServiceKeda::CTermServiceKeda(int nPort)
+    :server_(nPort)
 {
 
 }
