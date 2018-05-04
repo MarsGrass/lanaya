@@ -1,4 +1,5 @@
 ﻿#include "TermKeda.h"
+#include "termsql.h"
 
 CTermKeda::CTermKeda()
 {
@@ -28,8 +29,21 @@ int CTermKeda::DoCommand(qtMessage* pMsg, char* reply)
 	int nLength;
     unsigned char* pByte = (unsigned char*)pMsg->m_data.data();
 
+    if(m_online == 0)
+    {
+        QtMysqlObj* pMysqlObj = mysql_->GetMysqlObj();
+        if(pMysqlObj)
+        {
+            QString sql = QString(TERM_ON).arg(m_strSn);
+            if(pMysqlObj->ExeQuery(sql) == false){
+                qDebug() << "execute sql:" << sql << " failed";
+            }
+            mysql_->ReleaseMysqlObj(pMysqlObj);
+        }
+        m_online = 1;
+    }
     m_last_time = QTime::currentTime();
-	m_online = 1;
+
 
 	switch(pByte[3])
 	{
@@ -129,7 +143,29 @@ int CTermKeda::DataReport(qtMessage* pMsg, char* reply)
 
         QString str = datetime.toString("yyyy-MM-dd HH-mm-ss");
 
-        qDebug() << nData1<< nData2<<nData3<< nData4<<str;
+        qDebug() << nData1<< nData2<<nData3<< nData4 << str;
+
+        QtMysqlObj* pMysqlObj = mysql_->GetMysqlObj();
+        if(pMysqlObj)
+        {
+            QString sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype1).arg(nData1).arg(str);
+            if(pMysqlObj->ExeQuery(sql) == false){
+                qDebug() << "execute sql:" << sql << " failed";
+            }
+            sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype2).arg(nData2).arg(str);
+            if(pMysqlObj->ExeQuery(sql) == false){
+                qDebug() << "execute sql:" << sql << " failed";
+            }
+            sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype3).arg(nData3).arg(str);
+            if(pMysqlObj->ExeQuery(sql) == false){
+                qDebug() << "execute sql:" << sql << " failed";
+            }
+            sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype4).arg(nData4).arg(str);
+            if(pMysqlObj->ExeQuery(sql) == false){
+                qDebug() << "execute sql:" << sql << " failed";
+            }
+            mysql_->ReleaseMysqlObj(pMysqlObj);
+        }
     }
 
     return 10;
@@ -140,28 +176,16 @@ void CTermKeda::SendMsg(qtMessage* pMsg)
 {
     if(m_pSession)
     {
+        char binData[4096] = "";
+        for(int i = 0; i < pMsg->m_nWritePos; i++)
+        {
+            sprintf(binData + i*3, " %02X", pMsg->m_data.at(i));
+        }
+        qDebug() << "send data:" << binData;
+
         m_pSession->asynWrite(pMsg);
     }
 }
-//void CTermKeda::SendMsg(unsigned char* request, int length)
-//{
-//    qtMessage* pSendMsg = pServer->GetMessage();
-//	unsigned char* pByte = pSendMsg->WriterPtr();
-//	memcpy(pByte, request, length);
-//	pSendMsg->WriterPtr(length);
-
-//	char binData[4096] = "";
-//	for(int i = 0; i < length; i++)
-//	{
-//		sprintf(binData + i*3, " %02X", (unsigned char)request[i]);
-//	}
-//	HD_INFO(MORPHING, "发送数据：%s\n", binData);
-
-//	pSendMsg->SetMsgType(m_nMsgType);
-//	pSendMsg->SetNetHandle(m_netHandle);
-//	pServer->AsyncWrite(pSendMsg);
-//	pSendMsg->Release();
-//}
 
 void CTermKeda::OnTime(QTime sec)
 {
@@ -169,15 +193,14 @@ void CTermKeda::OnTime(QTime sec)
 	{
 		m_online = 0;
 
-//		MySQLInterface* pMySQLInterface = DbConPool.GetMysqlCon();
-//		if(pMySQLInterface == NULL)
-//		{
-//			return;
-//		}
-//		char sql[256] ="";
-//		sprintf(sql, "update Keda_term set link_status = 2, run_status = 2 where sn = '%s';", m_strSn.c_str());
-//		pMySQLInterface->writeDataToDB(sql);
-
-//		DbConPool.ReleaseMysqlCon(pMySQLInterface);
+        QtMysqlObj* pMysqlObj = mysql_->GetMysqlObj();
+        if(pMysqlObj)
+        {
+            QString sql = QString(TERM_OFF).arg(m_strSn);
+            if(pMysqlObj->ExeQuery(sql) == false){
+                qDebug() << "execute sql:" << sql << " failed";
+            }
+            mysql_->ReleaseMysqlObj(pMysqlObj);
+        }
 	}
 }

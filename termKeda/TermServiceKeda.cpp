@@ -1,6 +1,4 @@
 ﻿#include "TermServiceKeda.h"
-
-
 /*------------------------------------------------------------------
 TermServiceMsgProcessKeda
 ------------------------------------------------------------------*/
@@ -30,21 +28,17 @@ bool TermServiceWorkKeda::Work(qtMessage* pMsg)
     char sn[9] = "";
     sprintf(sn, "%02X%02X%02X%02X", pByte[4], pByte[5], pByte[6], pByte[7]);
 
-    CTermKeda* pTermKeda = listTerm_->GetTermBySn(sn);
-    if(pTermKeda == NULL)
-    {
+    CTermKeda* pTermKeda = listTerm_->GetTermBySn(sn, false);
+    if(pTermKeda == NULL){
+        pTermKeda = listTerm_->AddTerm(sn);
     }
-    else
-    {
-        res = pTermKeda->DoCommand(pMsg, reply);
 
-        if(res > 0)
-        {
-            qtMessage* pMessage = pool_->GetQtMessage();
-            pMessage->m_data.insert(0, reply, res);
-            pMessage->WritePos(res);
-            pTermKeda->SendMsg(pMessage);
-        }
+    int length = pTermKeda->DoCommand(pMsg, reply);
+    if(length > 0){
+        qtMessage* pMessage = pool_->GetQtMessage();
+        pMessage->m_data.insert(0, reply, length);
+        pMessage->WritePos(length);
+        pTermKeda->SendMsg(pMessage);
     }
 
     return true;
@@ -91,8 +85,8 @@ int TermServiceWorkKeda::CheckMsg(qtMessage* pMsg)
     return 0;
 }
 
-CTermServiceKeda::CTermServiceKeda(int nPort)
-    :server_(nPort)
+CTermServiceKeda::CTermServiceKeda(int port)
+    :server_(port)
 {
 
 }

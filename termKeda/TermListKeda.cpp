@@ -1,5 +1,5 @@
 ﻿#include "TermListKeda.h"
-
+#include "termsql.h"
 
 CTermListKeda::CTermListKeda(void)
 {
@@ -28,41 +28,36 @@ int CTermListKeda::Init(QtMysqlManage* pMysql, int check_time)
         return -1;
 	}
 
-//    QVector<QVector<QString>> Querydata;
-//    bool bQuery = pMysqlObj->ExeQuery("select term_id, sn, name from Keda_term;", Querydata);
-//	if(bQuery == false)
-//	{
-//        qDebug()<< "select term_id, sn, name from Keda_term; failed";
-//	}
-//	else
-//	{
-//        int nSize = Querydata.size();
-//		if(nSize > 0) //表明能够查询到数据
-//		{
-//			for (int i = 0; i < nSize; i++)
-//			{
-//                QString id = Querydata[i][0];
-//                QString sn = Querydata[i][1];
-//                QString name = Querydata[i][2];
-
-//                CTermKeda* pTerm = new CTermKeda(mysql_, sn);
-//                pTerm->m_nNumId = id.toInt();
-//                pTerm->m_strName = name;
-
-//                term_map_.insert(sn, pTerm);
-//			}
-//		}
-//	}
+    QVector<QVector<QString>> Querydata;
+    bool bQuery = pMysqlObj->ExeQuery(TERM_LIST, Querydata);
+    if(bQuery == false)
+    {
+        qDebug() << "execute sql:" << TERM_LIST << " failed";
+    }
+    else
+    {
+        int nSize = Querydata.size();
+        if(nSize > 0) //表明能够查询到数据
+        {
+            for (int i = 0; i < nSize; i++)
+            {
+                QString sn = Querydata[i][0];
+                CTermKeda* pTerm = new CTermKeda(mysql_, sn);
+                term_map_.insert(sn, pTerm);
+            }
+        }
+    }
 
 	TermMap::iterator it = term_map_.begin();
     for(; it != term_map_.end(); it++)
     {
         CTermKeda* pTerm = it.value();
 		{
-            QString sql = QString("update Keda_term set link_status = 2, run_status = 2 where term_id = %1;").arg(pTerm->m_nNumId);
+            QString sql = QString(TERM_OFF).arg(pTerm->m_strSn);
             pMysqlObj->ExeQuery(sql);
 		}
     }
+    mysql_->ReleaseMysqlObj(pMysqlObj);
 
 	thread_ = new boost::thread(boost::bind(&CTermListKeda::Run, this));
 
@@ -127,6 +122,14 @@ CTermKeda* CTermListKeda::AddTerm(const QString& strTermSn)
 
     CTermKeda* pTerm = new CTermKeda(mysql_, strTermSn);
     term_map_.insert(strTermSn, pTerm);
+
+    QtMysqlObj* pMysqlObj = mysql_->GetMysqlObj();
+    QString sql = QString(TERM_INSERT).arg(strTermSn).arg(strTermSn);
+    bool bQuery = pMysqlObj->ExeQuery(sql);
+    if(bQuery == false){
+        qDebug() << "execute sql:" << sql << " failed";
+    }
+    mysql_->ReleaseMysqlObj(pMysqlObj);
 
     return pTerm;
 }

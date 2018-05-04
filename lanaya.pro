@@ -60,7 +60,8 @@ HEADERS += \
     termKeda/TermKeda.h \
     termKeda/TermListKeda.h \
     termKeda/TermServiceKeda.h \
-    qtConfig.h
+    qtConfig.h \
+    termKeda/termsql.h
 
 CONFIG(release,debug|release){
     LIBS += -LC:\Boost\lib -llibboost_thread-vc140-mt-x64-1_66
