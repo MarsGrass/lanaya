@@ -13,7 +13,7 @@ class CTermListKeda
 
 public:
 	CTermListKeda(void);
-    CTermListKeda(QtMysqlManage* pMysql, int check_time = 60);
+    CTermListKeda(QtMysqlManage* pMysql, int check_time = 5);
 	~CTermListKeda(void);
 
 public:

@@ -148,19 +148,23 @@ int CTermKeda::DataReport(qtMessage* pMsg, char* reply)
         QtMysqlObj* pMysqlObj = mysql_->GetMysqlObj();
         if(pMysqlObj)
         {
-            QString sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype1).arg(nData1).arg(str);
+            QString sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype1).arg(nData1)
+                    .arg(str).arg(m_strSn).arg(ntype1);
             if(pMysqlObj->ExeQuery(sql) == false){
                 qDebug() << "execute sql:" << sql << " failed";
             }
-            sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype2).arg(nData2).arg(str);
+            sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype2).arg(nData2)
+                    .arg(str).arg(m_strSn).arg(ntype2);
             if(pMysqlObj->ExeQuery(sql) == false){
                 qDebug() << "execute sql:" << sql << " failed";
             }
-            sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype3).arg(nData3).arg(str);
+            sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype3).arg(nData3)
+                    .arg(str).arg(m_strSn).arg(ntype3);
             if(pMysqlObj->ExeQuery(sql) == false){
                 qDebug() << "execute sql:" << sql << " failed";
             }
-            sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype4).arg(nData4).arg(str);
+            sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype4).arg(nData4)
+                    .arg(str).arg(m_strSn).arg(ntype4);
             if(pMysqlObj->ExeQuery(sql) == false){
                 qDebug() << "execute sql:" << sql << " failed";
             }
@@ -179,12 +183,17 @@ void CTermKeda::SendMsg(qtMessage* pMsg)
         char binData[4096] = "";
         for(int i = 0; i < pMsg->m_nWritePos; i++)
         {
-            sprintf(binData + i*3, " %02X", pMsg->m_data.at(i));
+            sprintf(binData + i*3, " %02X", (unsigned char)pMsg->m_data.at(i));
         }
         qDebug() << "send data:" << binData;
 
         m_pSession->asynWrite(pMsg);
     }
+}
+
+void CTermKeda::ExecuteContent(const QString& content)
+{
+    qDebug() << content;
 }
 
 void CTermKeda::OnTime(QTime sec)

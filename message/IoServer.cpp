@@ -12,7 +12,7 @@ IOServer::IOServer(short port, int io_service_pool_size, QObject* qObj)
     pMessageQueue_ = NULL;
     pMessagePool_  = NULL;
 
-    m_nSessionSize = 3;
+    m_nSessionSize = 20;
 
     for(int i = 0; i < m_nSessionSize; i++)
     {

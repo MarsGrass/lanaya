@@ -25,7 +25,8 @@ SOURCES += main.cpp \
     termKeda/TermKeda.cpp \
     termKeda/TermListKeda.cpp \
     termKeda/TermServiceKeda.cpp \
-    qtConfig.cpp
+    qtConfig.cpp \
+    common/LogQt.cpp
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked deprecated (the exact warnings
@@ -61,7 +62,8 @@ HEADERS += \
     termKeda/TermListKeda.h \
     termKeda/TermServiceKeda.h \
     qtConfig.h \
-    termKeda/termsql.h
+    termKeda/termsql.h \
+    common/LogQt.h
 
 CONFIG(release,debug|release){
     LIBS += -LC:\Boost\lib -llibboost_thread-vc140-mt-x64-1_66

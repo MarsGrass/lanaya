@@ -7,11 +7,14 @@
 #include "termKeda/TermServiceKeda.h"
 #include "termKeda/TermListKeda.h"
 
+#include "common/LogQt.h"
 
 #include "qtConfig.h"
 
 int main(int argc, char *argv[])
 {
+    qInstallMessageHandler(CLogQt::myMessageOutput);
+
     QCoreApplication a(argc, argv);
 
     qtConfig g_config;

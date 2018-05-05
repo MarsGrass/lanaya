@@ -16,7 +16,7 @@ public:
 
     //初始化
     int Init(const QString& server, const QString& username, const QString& passwd,
-             const QString& database, int port = 3336, int nSize = 2);
+             const QString& database, int port = 3336, int nSize = 4);
 
     //析构
     void UnInit();

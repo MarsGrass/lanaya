@@ -36,7 +36,7 @@ bool TermServiceWorkKeda::Work(qtMessage* pMsg)
     int length = pTermKeda->DoCommand(pMsg, reply);
     if(length > 0){
         qtMessage* pMessage = pool_->GetQtMessage();
-        pMessage->m_data.insert(0, reply, length);
+        pMessage->m_data.replace(0, length, reply, length);
         pMessage->WritePos(length);
         pTermKeda->SendMsg(pMessage);
     }

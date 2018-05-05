@@ -13,7 +13,7 @@ class IOServer : public QObject
     Q_OBJECT
 
 public:
-    IOServer(short port, int io_service_pool_size = 2, QObject* qObj = 0);
+    IOServer(short port, int io_service_pool_size = 4, QObject* qObj = 0);
 
     ~IOServer();
 

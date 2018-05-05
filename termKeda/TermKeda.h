@@ -27,6 +27,8 @@ public:
 
     void SendMsg(qtMessage* pMsg);
 
+    void ExecuteContent(const QString& content);
+
 
 public:
     QString m_strSn;

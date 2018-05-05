@@ -182,6 +182,36 @@ void CTermListKeda::Run(void)
             }
         }
 
+        {
+            QtMysqlObj* pMysqlObj = mysql_->GetMysqlObj();
+            if(pMysqlObj == NULL){
+                qDebug()<< "CTermListKeda::Run failed";
+                continue ;
+            }
+
+            QVector<QVector<QString>> Querydata;
+            bool bQuery = pMysqlObj->ExeQuery(TERM_CMD_LIST, Querydata);
+            if(bQuery == false)
+            {
+                qDebug() << "execute sql:" << TERM_CMD_LIST << " failed";
+            }
+            else
+            {
+                int nSize = Querydata.size();
+                if(nSize == 1) //表示查询到数据
+                {
+                    QString sn = Querydata[0][0];
+                    QString context = Querydata[0][1];
+                    CTermKeda* pTerm = GetTermBySn(sn, false);
+                    if(pTerm)
+                    {
+                        pTerm->ExecuteContent(context);
+                    }
+                }
+            }
+
+        }
+
         //定时睡眠
         boost::xtime xt;
         boost::xtime_get(&xt, boost::TIME_UTC_);
