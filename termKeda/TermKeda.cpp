@@ -68,6 +68,16 @@ int CTermKeda::Login(qtMessage* pMsg, char* reply)
 {
     unsigned char* pByte = (unsigned char*)pMsg->m_data.data();
 
+    QtMysqlObj* pMysqlObj = mysql_->GetMysqlObj();
+    if(pMysqlObj)
+    {
+        QString sql = QString(TERM_FREQ).arg(pByte[14]).arg(m_strSn);
+        if(pMysqlObj->ExeQuery(sql) == false){
+            qDebug() << "execute sql:" << sql << " failed";
+        }
+        mysql_->ReleaseMysqlObj(pMysqlObj);
+    }
+
 	reply[0] = 0xFE;
 	reply[1] = 0x00;
     reply[2] = 0x10;
@@ -80,6 +90,16 @@ int CTermKeda::Login(qtMessage* pMsg, char* reply)
 
 int CTermKeda::SetPeriod(qtMessage* pMsg, char* reply)
 {
+    QtMysqlObj* pMysqlObj = mysql_->GetMysqlObj();
+    if(pMysqlObj)
+    {
+        QString sql = QString(TERM_CMD_COMP).arg(m_strSn);
+        if(pMysqlObj->ExeQuery(sql) == false){
+            qDebug() << "execute sql:" << sql << " failed";
+        }
+        mysql_->ReleaseMysqlObj(pMysqlObj);
+    }
+
     return 0;
 }
 
@@ -194,6 +214,8 @@ void CTermKeda::SendMsg(qtMessage* pMsg)
 void CTermKeda::ExecuteContent(const QString& content)
 {
     qDebug() << content;
+
+
 }
 
 void CTermKeda::OnTime(QTime sec)
