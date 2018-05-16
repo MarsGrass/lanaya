@@ -15,23 +15,25 @@ public:
 	~CTermKeda(void);
 
 public:
-    int DoCommand(qtMessage* pMsg, char* reply);
+    int DoCommand(qtMessage* pMsg, QByteArray& reply);
 
-    int Login(qtMessage* pMsg, char* reply);
+    int Login(qtMessage* pMsg, QByteArray& reply);
 
-    int DataReport(qtMessage* pMsg, char* reply);
+    int DataReport(qtMessage* pMsg, QByteArray& reply);
 
-    int SetPeriod(qtMessage* pMsg, char* reply);
+    int SetPeriod(qtMessage* pMsg, QByteArray& reply);
 
     void OnTime(QTime sec);
 
     void SendMsg(qtMessage* pMsg);
 
-    void ExecuteContent(const QString& content);
+    void ExecuteContent(const QString& content, const QString& taskID);
 
 
 public:
     QString m_strSn;
+    QString m_strTaskId;
+    QByteArray m_byteSn;
     QString m_strName;
 	int m_nNumId;
 	int m_online;
@@ -42,5 +44,6 @@ public:
 
 public:
     QtMysqlManage* mysql_;
+
 
 };

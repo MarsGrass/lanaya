@@ -59,11 +59,11 @@ private:
     // The allocator to use for handler-based custom memory allocation.
     //handler_allocator allocator_;
 
-    IOServer* pServer_;
-
     boost::mutex        m_mutex;
 
 public:
     int m_nIndex;
     static int m_sCount;
+
+    IOServer* pServer_;
 };

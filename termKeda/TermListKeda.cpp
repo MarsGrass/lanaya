@@ -1,6 +1,9 @@
 ﻿#include "TermListKeda.h"
 #include "termsql.h"
 
+#include <QEventLoop>
+#include <QTimer>
+
 CTermListKeda::CTermListKeda(void)
 {
     mysql_ = NULL;
@@ -164,6 +167,16 @@ void CTermListKeda::Run(void)
 {
 	while(true)
     {
+        //定时睡眠
+        boost::xtime xt;
+        boost::xtime_get(&xt, boost::TIME_UTC_);
+        xt.sec += check_time_;
+        boost::thread::sleep(xt);
+
+//        QEventLoop loop;
+//        QTimer::singleShot(check_time_, &loop, SLOT(quit()));
+//        loop.exec();
+
         //获取系统当前时间
         QTime sec = QTime::currentTime();
 
@@ -202,21 +215,20 @@ void CTermListKeda::Run(void)
                 {
                     QString sn = Querydata[0][0];
                     QString context = Querydata[0][1];
-                    CTermKeda* pTerm = GetTermBySn(sn, false);
-                    if(pTerm)
+                    QString taskId = Querydata[0][2];
+                    CTermKeda* pTermSql = GetTermBySn(sn, false);
+                    if(pTermSql)
                     {
-                        pTerm->ExecuteContent(context);
+                        if(pTermSql->m_online == 1)
+                        {
+                            pTermSql->ExecuteContent(context, taskId);
+                        }
                     }
                 }
             }
 
+            mysql_->ReleaseMysqlObj(pMysqlObj);
         }
-
-        //定时睡眠
-        boost::xtime xt;
-        boost::xtime_get(&xt, boost::TIME_UTC_);
-        xt.sec += check_time_;
-        boost::thread::sleep(xt);
     }
 }
 

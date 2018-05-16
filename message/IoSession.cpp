@@ -124,7 +124,7 @@ void IOSession::asynWrite(qtMessage* pMsg)
 {
     boost::mutex::scoped_lock lock(m_mutex);
 
-    boost::asio::async_write(socket_, boost::asio::buffer(pMsg->WritePosRef(), pMsg->m_nWritePos),
+    boost::asio::async_write(socket_, boost::asio::buffer(pMsg->m_data.data(), pMsg->m_nWritePos),
                               boost::asio::transfer_at_least(pMsg->m_nWritePos),
                               boost::bind(&IOSession::handle_write,
                                           this,  pMsg,

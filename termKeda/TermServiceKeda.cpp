@@ -15,7 +15,7 @@ TermServiceWorkKeda::~TermServiceWorkKeda(void)
 bool TermServiceWorkKeda::Work(qtMessage* pMsg)
 {
     unsigned char* pByte = (unsigned char*)pMsg->m_data.data();
-    char reply[1040] = "";
+    QByteArray reply;
 
     //网络阻塞暂时不处理
     int res = CheckMsg(pMsg);
@@ -31,12 +31,14 @@ bool TermServiceWorkKeda::Work(qtMessage* pMsg)
     CTermKeda* pTermKeda = listTerm_->GetTermBySn(sn, false);
     if(pTermKeda == NULL){
         pTermKeda = listTerm_->AddTerm(sn);
+
+        pTermKeda->m_byteSn.replace(0,4,(char*)pByte + 4, 4);
     }
 
     int length = pTermKeda->DoCommand(pMsg, reply);
     if(length > 0){
         qtMessage* pMessage = pool_->GetQtMessage();
-        pMessage->m_data.replace(0, length, reply, length);
+        pMessage->m_data.replace(0, length, reply);
         pMessage->WritePos(length);
         pTermKeda->SendMsg(pMessage);
     }

@@ -7,6 +7,8 @@ CTermKeda::CTermKeda()
     m_last_time = QTime::currentTime();
     m_pSession = NULL;
     mysql_ = NULL;
+
+    m_byteSn.resize(4);
 }
 
 CTermKeda::CTermKeda(QtMysqlManage* mysql, const QString& sn)
@@ -15,6 +17,19 @@ CTermKeda::CTermKeda(QtMysqlManage* mysql, const QString& sn)
 	m_online = 0;
     m_last_time = QTime::currentTime();
     m_pSession = NULL;
+
+    m_byteSn.resize(4);
+
+    if(sn.length() == 8)
+    {
+        m_byteSn[0] = (char)sn.mid(0,2).toInt();
+        m_byteSn[1] = (char)sn.mid(2,2).toInt();
+        m_byteSn[2] = (char)sn.mid(4,2).toInt();
+        m_byteSn[3] = (char)sn.mid(6,2).toInt();
+    }
+
+
+
 }
 
 
@@ -22,7 +37,7 @@ CTermKeda::~CTermKeda(void)
 {
 }
 
-int CTermKeda::DoCommand(qtMessage* pMsg, char* reply)
+int CTermKeda::DoCommand(qtMessage* pMsg, QByteArray& reply)
 {
     m_pSession = pMsg->getSession();
 
@@ -64,7 +79,7 @@ int CTermKeda::DoCommand(qtMessage* pMsg, char* reply)
 }
 
 
-int CTermKeda::Login(qtMessage* pMsg, char* reply)
+int CTermKeda::Login(qtMessage* pMsg, QByteArray& reply)
 {
     unsigned char* pByte = (unsigned char*)pMsg->m_data.data();
 
@@ -78,39 +93,44 @@ int CTermKeda::Login(qtMessage* pMsg, char* reply)
         mysql_->ReleaseMysqlObj(pMysqlObj);
     }
 
-	reply[0] = 0xFE;
+    reply.resize(16);
+    reply[0] = (char)0xFE;
 	reply[1] = 0x00;
     reply[2] = 0x10;
 	reply[3] = 0x01;
-    memcpy(reply + 4, pByte + 4, 11);
-    reply[15] = 0xFE;
+    reply.replace(4, 11, (char*)pByte + 4, 11);
+    reply[15] = (char)0xFE;
 	
     return 16;
 }
 
-int CTermKeda::SetPeriod(qtMessage* pMsg, char* reply)
+int CTermKeda::SetPeriod(qtMessage* pMsg, QByteArray& reply)
 {
     QtMysqlObj* pMysqlObj = mysql_->GetMysqlObj();
-    if(pMysqlObj)
+    if(pMysqlObj && m_strTaskId.length() > 0)
     {
-        QString sql = QString(TERM_CMD_COMP).arg(m_strSn);
+        QString sql = QString(TERM_CMD_COMP).arg(m_strTaskId);
         if(pMysqlObj->ExeQuery(sql) == false){
             qDebug() << "execute sql:" << sql << " failed";
         }
         mysql_->ReleaseMysqlObj(pMysqlObj);
     }
 
+    reply.clear();
+
     return 0;
 }
 
-int CTermKeda::DataReport(qtMessage* pMsg, char* reply)
+int CTermKeda::DataReport(qtMessage* pMsg, QByteArray& reply)
 {
     unsigned char* pByte = (unsigned char*)pMsg->m_data.data();
+
+    reply.resize(10);
 	reply[0] = 0xFE;
 	reply[1] = 0x00;
     reply[2] = 0x0A;
 	reply[3] = 0x02;
-    memcpy(reply + 4, pByte + 4, 5);
+    reply.replace(4, 5, (char*)pByte + 4, 5);
     reply[9] = 0xFE;
 
     int nDataPos = 9;
@@ -211,10 +231,42 @@ void CTermKeda::SendMsg(qtMessage* pMsg)
     }
 }
 
-void CTermKeda::ExecuteContent(const QString& content)
+void CTermKeda::ExecuteContent(const QString& content, const QString& taskID)
 {
-    qDebug() << content;
+    qDebug() << "content" << content << " task ID" << taskID;
+    m_strTaskId = taskID;
 
+    if(m_pSession)
+    {
+       if(m_pSession->pServer_ == NULL)
+       {
+           qDebug() << "ExecuteContent server NULL";
+       }
+       if(m_pSession->pServer_->pMessagePool_ == NULL)
+       {
+           qDebug() << "ExecuteContent MessagePool NULL";
+       }
+
+       qtMessage* pMessage = m_pSession->pServer_->pMessagePool_->GetQtMessage();
+       if (pMessage == NULL)
+       {
+           return;
+       }
+       pMessage->setSession(m_pSession);
+
+       unsigned char* pByte = (unsigned char*)pMessage->m_data.data();
+       pByte[0] = 0xFE;
+       pByte[1] = 0x00;
+       pByte[2] = 0x0A;
+       pByte[3] = 0x02;
+       memcpy(pByte+4, m_byteSn.data(), 4);
+       pByte[8] = (unsigned char)content.toInt();
+       pByte[9] = 0xFE;
+
+       pMessage->WritePos(10);
+
+       SendMsg(pMessage);
+    }
 
 }
 
@@ -223,6 +275,7 @@ void CTermKeda::OnTime(QTime sec)
     if(m_last_time.secsTo(sec) > 90) //登入超时
 	{
 		m_online = 0;
+        m_strTaskId.clear();
 
         QtMysqlObj* pMysqlObj = mysql_->GetMysqlObj();
         if(pMysqlObj)

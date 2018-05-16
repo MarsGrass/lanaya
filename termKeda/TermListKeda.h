@@ -18,7 +18,7 @@ public:
 
 public:
 	//初始化命令
-    int Init(QtMysqlManage* pMysql, int check_time = 60);
+    int Init(QtMysqlManage* pMysql, int check_time = 5);
 
 	//析构
 	void UnInit();
