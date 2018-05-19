@@ -132,6 +132,31 @@ CTermKeda* CTermListKeda::AddTerm(const QString& strTermSn)
     if(bQuery == false){
         qDebug() << "execute sql:" << sql << " failed";
     }
+
+    sql = QString(SENSOR_INSERT_1).arg(strTermSn).arg(strTermSn);
+    bQuery = pMysqlObj->ExeQuery(sql);
+    if(bQuery == false){
+        qDebug() << "execute sql:" << sql << " failed";
+    }
+
+    sql = QString(SENSOR_INSERT_2).arg(strTermSn).arg(strTermSn);
+    bQuery = pMysqlObj->ExeQuery(sql);
+    if(bQuery == false){
+        qDebug() << "execute sql:" << sql << " failed";
+    }
+
+    sql = QString(SENSOR_INSERT_3).arg(strTermSn).arg(strTermSn);
+    bQuery = pMysqlObj->ExeQuery(sql);
+    if(bQuery == false){
+        qDebug() << "execute sql:" << sql << " failed";
+    }
+
+    sql = QString(SENSOR_INSERT_4).arg(strTermSn).arg(strTermSn);
+    bQuery = pMysqlObj->ExeQuery(sql);
+    if(bQuery == false){
+        qDebug() << "execute sql:" << sql << " failed";
+    }
+
     mysql_->ReleaseMysqlObj(pMysqlObj);
 
     return pTerm;

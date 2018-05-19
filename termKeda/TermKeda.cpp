@@ -27,9 +27,6 @@ CTermKeda::CTermKeda(QtMysqlManage* mysql, const QString& sn)
         m_byteSn[2] = (char)sn.mid(4,2).toInt();
         m_byteSn[3] = (char)sn.mid(6,2).toInt();
     }
-
-
-
 }
 
 
@@ -175,6 +172,9 @@ int CTermKeda::DataReport(qtMessage* pMsg, QByteArray& reply)
         min = min/16*10 + min%16;
         second = second/16*10 + second%16;
 
+        QString strData1 = QString::number(double(nData1) / 100.0, 'f', 2);
+        QString strData2 = QString::number(double(nData2) / 100.0, 'f', 2);
+        QString strData3 = QString::number(double(nData3) / 100.0, 'f', 0);
 
         QDate date(2000+year, month, day);
         QTime time(hour, min, second);
@@ -183,22 +183,22 @@ int CTermKeda::DataReport(qtMessage* pMsg, QByteArray& reply)
 
         QString str = datetime.toString("yyyy-MM-dd HH-mm-ss");
 
-        qDebug() << nData1<< nData2<<nData3<< nData4 << str;
+        qDebug() << strData1 << strData2 << strData3 << nData4 << str;
 
         QtMysqlObj* pMysqlObj = mysql_->GetMysqlObj();
         if(pMysqlObj)
         {
-            QString sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype1).arg(nData1)
+            QString sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype1).arg(strData1)
                     .arg(str).arg(m_strSn).arg(ntype1);
             if(pMysqlObj->ExeQuery(sql) == false){
                 qDebug() << "execute sql:" << sql << " failed";
             }
-            sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype2).arg(nData2)
+            sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype2).arg(strData2)
                     .arg(str).arg(m_strSn).arg(ntype2);
             if(pMysqlObj->ExeQuery(sql) == false){
                 qDebug() << "execute sql:" << sql << " failed";
             }
-            sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype3).arg(nData3)
+            sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype3).arg(strData3)
                     .arg(str).arg(m_strSn).arg(ntype3);
             if(pMysqlObj->ExeQuery(sql) == false){
                 qDebug() << "execute sql:" << sql << " failed";
@@ -208,6 +208,27 @@ int CTermKeda::DataReport(qtMessage* pMsg, QByteArray& reply)
             if(pMysqlObj->ExeQuery(sql) == false){
                 qDebug() << "execute sql:" << sql << " failed";
             }
+
+            if(i == nCount - 1)
+            {
+                sql = QString(SENSOR_UPDATE_1).arg(strData1).arg(m_strSn);
+                if(pMysqlObj->ExeQuery(sql) == false){
+                    qDebug() << "execute sql:" << sql << " failed";
+                }
+                sql = QString(SENSOR_UPDATE_2).arg(strData2).arg(m_strSn);
+                if(pMysqlObj->ExeQuery(sql) == false){
+                    qDebug() << "execute sql:" << sql << " failed";
+                }
+                sql = QString(SENSOR_UPDATE_3).arg(strData3).arg(m_strSn);
+                if(pMysqlObj->ExeQuery(sql) == false){
+                    qDebug() << "execute sql:" << sql << " failed";
+                }
+                sql = QString(SENSOR_UPDATE_4).arg(nData4).arg(m_strSn);
+                if(pMysqlObj->ExeQuery(sql) == false){
+                    qDebug() << "execute sql:" << sql << " failed";
+                }
+            }
+
             mysql_->ReleaseMysqlObj(pMysqlObj);
         }
     }
