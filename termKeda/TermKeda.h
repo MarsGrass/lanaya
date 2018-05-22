@@ -38,6 +38,8 @@ public:
 	int m_nNumId;
 	int m_online;
 
+    int m_nCmdTimes;
+
     QTime m_last_time;
 
     IOSession* m_pSession;

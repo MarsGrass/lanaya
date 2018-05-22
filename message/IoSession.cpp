@@ -44,6 +44,7 @@ void IOSession::start()
     qtMessage* pMessage = pServer_->pMessagePool_->GetQtMessage();
     if (pMessage == NULL)
     {
+        pServer_->ReleaseSession(this);
         return;
     }
     pMessage->setSession(this);
@@ -118,6 +119,11 @@ void IOSession::handle_read_body(qtMessage* pMsg, size_t nTransSize, const boost
         pServer_->ReleaseSession(this);
         qDebug() << "socket close:" << error.value() << error.message().c_str();
     }
+}
+
+void IOSession::stop()
+{
+    socket_.close();
 }
 
 void IOSession::asynWrite(qtMessage* pMsg)

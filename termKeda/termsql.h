@@ -11,6 +11,7 @@
                             "and gas_terminal.run_status = 1 limit 1;"
 
 #define TERM_CMD_COMP       "update gas_terminal_cmd set exec_status = 1, exec_time = now() where id = %1;"
+#define TERM_CMD_FAILED     "update gas_terminal_cmd set exec_status = 2, exec_time = now() where id = %1;"
 
 #define TERM_ON             "update gas_terminal set link_status = 1, run_status = 1 where code = '%1';"
 #define TERM_OFF            "update gas_terminal set link_status = 2, run_status = 2 where code = '%1';"

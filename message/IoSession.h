@@ -34,6 +34,8 @@ public:
 
     void start();
 
+    void stop();
+
     //读取消息头
     void handle_read_head(qtMessage* pMsg, size_t nTransSize, const boost::system::error_code& error);
 

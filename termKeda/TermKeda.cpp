@@ -9,6 +9,7 @@ CTermKeda::CTermKeda()
     mysql_ = NULL;
 
     m_byteSn.resize(4);
+    m_nCmdTimes = 0;
 }
 
 CTermKeda::CTermKeda(QtMysqlManage* mysql, const QString& sn)
@@ -22,10 +23,10 @@ CTermKeda::CTermKeda(QtMysqlManage* mysql, const QString& sn)
 
     if(sn.length() == 8)
     {
-        m_byteSn[0] = (char)sn.mid(0,2).toInt();
-        m_byteSn[1] = (char)sn.mid(2,2).toInt();
-        m_byteSn[2] = (char)sn.mid(4,2).toInt();
-        m_byteSn[3] = (char)sn.mid(6,2).toInt();
+        m_byteSn[0] = (char)sn.mid(0,2).toInt(0, 16);
+        m_byteSn[1] = (char)sn.mid(2,2).toInt(0, 16);
+        m_byteSn[2] = (char)sn.mid(4,2).toInt(0, 16);
+        m_byteSn[3] = (char)sn.mid(6,2).toInt(0, 16);
     }
 }
 
@@ -95,7 +96,21 @@ int CTermKeda::Login(qtMessage* pMsg, QByteArray& reply)
 	reply[1] = 0x00;
     reply[2] = 0x10;
 	reply[3] = 0x01;
-    reply.replace(4, 11, (char*)pByte + 4, 11);
+    reply.replace(4, 4, (char*)pByte + 4, 4);
+    QDateTime datatime = QDateTime::currentDateTime();
+    int year = datatime.date().year() - 2000;
+    int month = datatime.date().month();
+    int day = datatime.date().day();
+    int hour = datatime.time().hour();
+    int minute = datatime.time().minute();
+    int second = datatime.time().second();
+    reply[8] = (year/10)*16 + (year%10);
+    reply[9] = (month/10)*16 + (month%10);
+    reply[10] = (day/10)*16 + (day%10);
+    reply[11] = (hour/10)*16 + (hour%10);
+    reply[12] = (minute/10)*16 + (minute%10);
+    reply[13] = (second/10)*16 + (second%10);
+    reply[14] = pByte[14];
     reply[15] = (char)0xFE;
 	
     return 16;
@@ -255,7 +270,29 @@ void CTermKeda::SendMsg(qtMessage* pMsg)
 void CTermKeda::ExecuteContent(const QString& content, const QString& taskID)
 {
     qDebug() << "content" << content << " task ID" << taskID;
-    m_strTaskId = taskID;
+
+    if(m_strTaskId == taskID)
+    {
+        m_nCmdTimes++;
+        if(m_nCmdTimes > 5)
+        {
+            QtMysqlObj* pMysqlObj = mysql_->GetMysqlObj();
+            if(pMysqlObj > 0)
+            {
+                QString sql = QString(TERM_CMD_FAILED).arg(m_strTaskId);
+                if(pMysqlObj->ExeQuery(sql) == false){
+                    qDebug() << "execute sql:" << sql << " failed";
+                }
+                mysql_->ReleaseMysqlObj(pMysqlObj);
+            }
+        }
+    }
+    else
+    {
+        m_strTaskId = taskID;
+        m_nCmdTimes = 0;
+
+    }
 
     if(m_pSession)
     {
@@ -279,7 +316,7 @@ void CTermKeda::ExecuteContent(const QString& content, const QString& taskID)
        pByte[0] = 0xFE;
        pByte[1] = 0x00;
        pByte[2] = 0x0A;
-       pByte[3] = 0x02;
+       pByte[3] = 0x03;
        memcpy(pByte+4, m_byteSn.data(), 4);
        pByte[8] = (unsigned char)content.toInt();
        pByte[9] = 0xFE;
@@ -306,6 +343,11 @@ void CTermKeda::OnTime(QTime sec)
                 qDebug() << "execute sql:" << sql << " failed";
             }
             mysql_->ReleaseMysqlObj(pMysqlObj);
+        }
+
+        if(m_pSession)
+        {
+            m_pSession->stop();
         }
 	}
 }
