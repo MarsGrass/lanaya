@@ -34,6 +34,8 @@ SOURCES += main.cpp \
 # deprecated API in order to know how to port your code away from it.
 DEFINES += QT_DEPRECATED_WARNINGS
 
+
+
 # You can also make your code fail to compile if you use deprecated APIs.
 # In order to do so, uncomment the following line.
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
@@ -67,10 +69,14 @@ HEADERS += \
 
 CONFIG(release,debug|release){
     LIBS += -LC:\Boost\lib -llibboost_thread-vc140-mt-x64-1_66
+
+    DEFINES += _WIN32_WINNT=0x0501
 }
 CONFIG(debug,debug|release){
     LIBS += -LC:\Boost\lib -llibboost_thread-vc140-mt-gd-x64-1_66
  #   LIBS += C:\study\mysql\lib\libmysqld.lib
+
+    DEFINES += -D_WIN32_WINNT=0x0501
 }
 
 

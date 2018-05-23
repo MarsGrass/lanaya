@@ -14,12 +14,16 @@ IOServer::IOServer(short port, int io_service_pool_size, QObject* qObj)
 
     m_nSessionSize = 20;
 
+    acceptor_.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+
+
     for(int i = 0; i < m_nSessionSize; i++)
     {
         //session_ptr new_session(new IOSession(io_service_work_pool_.get_io_service(), io_service_pool_.get_io_service()));
         IOSession* session = new IOSession(io_service_work_pool_.get_io_service(), io_service_pool_.get_io_service());
         listSession.push_back(session);
     }
+
 }
 
 IOServer::~IOServer()
@@ -45,14 +49,26 @@ IOSession* IOServer::GetSession()
 {
     if(listSession.size() == 0)
     {
+
         IOSession* session = new IOSession(io_service_work_pool_.get_io_service(), io_service_pool_.get_io_service());
         session->SetServer(this);
+
+        qDebug() << "create a new sesssion index:" << session->m_nIndex;
+
+        listUseSession.push_back(session);
         return session;
     }
     qDebug() << "sesssion pool size: " << listSession.size() << "--";
     IOSession* session = listSession.front();
     qDebug() << session->m_nIndex;
     listSession.pop_front();
+
+    {
+         boost::mutex::scoped_lock lock(m_mutex);
+         listUseSession.push_back(session);
+    }
+
+
     return session;
 }
 
@@ -68,6 +84,16 @@ void IOServer::ReleaseSession(IOSession* session)
     qDebug() << session->m_nIndex;
     session->socket().close();
     listSession.push_back(session);
+
+    {
+        boost::mutex::scoped_lock lock(m_mutex);
+        int nIndex = listUseSession.indexOf(session);
+        if(nIndex >= 0 && nIndex < listUseSession.size())
+        {
+            listUseSession.removeAt(nIndex);
+        }
+    }
+
 }
 
 
@@ -153,6 +179,8 @@ void IOServer::run()
         , &io_service_pool_)));
     work_thread_.reset(new boost::thread(boost::bind(&IOServicePool::run
         , &io_service_work_pool_)));
+
+    session_thread_ = new boost::thread(boost::bind(&IOServer::RunSessionList, this));
 }
 
 void IOServer::stop()
@@ -162,4 +190,34 @@ void IOServer::stop()
 
     io_thread_->join();
     work_thread_->join();
+}
+
+void IOServer::RunSessionList()
+{
+    while(true)
+    {
+        //定时睡眠
+        boost::xtime xt;
+        boost::xtime_get(&xt, boost::TIME_UTC_);
+        xt.sec += 60;
+        boost::thread::sleep(xt);
+
+        IOSession* sessionTmp = NULL;
+        {
+            boost::mutex::scoped_lock lock(m_mutex);
+            QTime time__ =  QTime::currentTime();
+            foreach (IOSession* session, listUseSession) {
+                if(session->time_.secsTo(time__)  > 9 ){
+                    sessionTmp = session;
+                    break;
+                }
+            }
+        }
+
+        if(sessionTmp)
+        {
+            sessionTmp->stop();
+        }
+
+    }
 }

@@ -38,22 +38,26 @@ private:
 //    session_ptr GetSession();
 //    void ReleaseSession(session_ptr session);
 
-
+    void RunSessionList();
 
 
 public:
     boost::shared_ptr<boost::thread> io_thread_;
     boost::shared_ptr<boost::thread> work_thread_;
+    boost::thread* session_thread_; //session线程
     IOServicePool io_service_pool_;
     IOServicePool io_service_work_pool_;
     tcp::acceptor acceptor_;
 
     //QList<session_ptr> listSession;
     QList<IOSession*> listSession;
+    QList<IOSession*> listUseSession;
 
     QtMessageParse* pMessageParse_;
     qtMessageQueue* pMessageQueue_;
     qtMessagePool*  pMessagePool_;
+
+    boost::mutex m_mutex;
 
     int m_nSessionSize;
     int m_nPort;

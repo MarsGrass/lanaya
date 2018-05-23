@@ -11,6 +11,8 @@ IOSession::IOSession(boost::asio::io_service& work_service, boost::asio::io_serv
     pServer_ = NULL;
 
     m_nIndex = m_sCount++;
+
+    time_ = QTime::currentTime();
 }
 
 IOSession::~IOSession()
@@ -32,6 +34,11 @@ void IOSession::SetServer(IOServer* pServer)
 void IOSession::start()
 {
     boost::system::error_code error;
+
+    socket_.set_option(boost::asio::ip::tcp::no_delay(true));
+    socket_.set_option(boost::asio::socket_base::keep_alive(true));
+
+    time_ = QTime::currentTime();
     //handle_write(error);
 
 //    socket_.async_read_some(boost::asio::buffer(data_),
@@ -64,8 +71,9 @@ void IOSession::handle_read_head(qtMessage* pMsg, size_t nTransSize, const boost
 {
     if (!error)
     {
+        time_ = QTime::currentTime();
+
         pMsg->WritePos((int)nTransSize);
-        qDebug() << "head size:" << nTransSize;
 //        socket_.async_receive(boost::asio::buffer(pMsg->WritePosRef(), pMessageParse_->GetBodyLength(pMsg)),
 //            boost::bind(&IOSession::handle_read_body, this,
 //            pMsg, boost::asio::placeholders::bytes_transferred, boost::asio::placeholders::error));
@@ -90,7 +98,8 @@ void IOSession::handle_read_body(qtMessage* pMsg, size_t nTransSize, const boost
 {
     if (!error)
     {
-        qDebug() << "body size:" << nTransSize;
+        time_ = QTime::currentTime();
+
         pMsg->WritePos((int)nTransSize);
         pServer_->pMessageQueue_->SubmitMessage(pMsg);
 

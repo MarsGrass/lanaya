@@ -14,6 +14,8 @@
 #include "qtMessageQueue.h"
 #include "qtMessagePool.h"
 
+#include <QTime>
+
 using boost::asio::ip::tcp;
 
 class IOServer;
@@ -68,4 +70,5 @@ public:
     static int m_sCount;
 
     IOServer* pServer_;
+    QTime time_;
 };

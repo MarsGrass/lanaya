@@ -344,10 +344,5 @@ void CTermKeda::OnTime(QTime sec)
             }
             mysql_->ReleaseMysqlObj(pMysqlObj);
         }
-
-        if(m_pSession)
-        {
-            m_pSession->stop();
-        }
 	}
 }
