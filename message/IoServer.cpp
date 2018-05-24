@@ -63,11 +63,7 @@ IOSession* IOServer::GetSession()
     qDebug() << session->m_nIndex;
     listSession.pop_front();
 
-    {
-         boost::mutex::scoped_lock lock(m_mutex);
-         listUseSession.push_back(session);
-    }
-
+    listUseSession.push_back(session);
 
     return session;
 }
@@ -85,15 +81,7 @@ void IOServer::ReleaseSession(IOSession* session)
     session->socket().close();
     listSession.push_back(session);
 
-    {
-        boost::mutex::scoped_lock lock(m_mutex);
-        int nIndex = listUseSession.indexOf(session);
-        if(nIndex >= 0 && nIndex < listUseSession.size())
-        {
-            listUseSession.removeAt(nIndex);
-        }
-    }
-
+    listUseSession.removeOne(session);
 }
 
 
@@ -203,14 +191,12 @@ void IOServer::RunSessionList()
         boost::thread::sleep(xt);
 
         IOSession* sessionTmp = NULL;
-        {
-            boost::mutex::scoped_lock lock(m_mutex);
-            QTime time__ =  QTime::currentTime();
-            foreach (IOSession* session, listUseSession) {
-                if(session->time_.secsTo(time__)  > 9 ){
-                    sessionTmp = session;
-                    break;
-                }
+
+        QTime time__ = QTime::currentTime();
+        foreach (IOSession* session, listUseSession) {
+            if(session->time_.secsTo(time__)  > 120 ){
+                sessionTmp = session;
+                break;
             }
         }
 

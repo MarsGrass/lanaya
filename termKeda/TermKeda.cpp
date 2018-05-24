@@ -187,9 +187,13 @@ int CTermKeda::DataReport(qtMessage* pMsg, QByteArray& reply)
         min = min/16*10 + min%16;
         second = second/16*10 + second%16;
 
-        QString strData1 = QString::number(double(nData1) / 100.0, 'f', 2);
+        double aData4 = 5 * (double)nData4 / 4095;
+        double fData4 = 3.3875*sinh(pow(aData4, 3)*0.1692 - pow(aData4, 2)*1.2898 + 4.085*aData4 - 4.7506);
+
+        QString strData1 = QString::number(double(nData1) / 100.0, 'f', 1);
         QString strData2 = QString::number(double(nData2) / 100.0, 'f', 2);
         QString strData3 = QString::number(double(nData3) / 100.0, 'f', 0);
+        QString strData4 = QString::number(fData4, 'f', 2);
 
         QDate date(2000+year, month, day);
         QTime time(hour, min, second);
@@ -198,7 +202,7 @@ int CTermKeda::DataReport(qtMessage* pMsg, QByteArray& reply)
 
         QString str = datetime.toString("yyyy-MM-dd HH-mm-ss");
 
-        qDebug() << strData1 << strData2 << strData3 << nData4 << str;
+        qDebug() << strData1 << strData2 << strData3 << strData4 << str;
 
         QtMysqlObj* pMysqlObj = mysql_->GetMysqlObj();
         if(pMysqlObj)
@@ -218,7 +222,7 @@ int CTermKeda::DataReport(qtMessage* pMsg, QByteArray& reply)
             if(pMysqlObj->ExeQuery(sql) == false){
                 qDebug() << "execute sql:" << sql << " failed";
             }
-            sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype4).arg(nData4)
+            sql = QString(TERM_DATA_INSERT).arg(m_strSn).arg(ntype4).arg(strData4)
                     .arg(str).arg(m_strSn).arg(ntype4);
             if(pMysqlObj->ExeQuery(sql) == false){
                 qDebug() << "execute sql:" << sql << " failed";
@@ -238,7 +242,7 @@ int CTermKeda::DataReport(qtMessage* pMsg, QByteArray& reply)
                 if(pMysqlObj->ExeQuery(sql) == false){
                     qDebug() << "execute sql:" << sql << " failed";
                 }
-                sql = QString(SENSOR_UPDATE_4).arg(nData4).arg(m_strSn);
+                sql = QString(SENSOR_UPDATE_4).arg(strData4).arg(m_strSn);
                 if(pMysqlObj->ExeQuery(sql) == false){
                     qDebug() << "execute sql:" << sql << " failed";
                 }
