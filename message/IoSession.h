@@ -17,6 +17,7 @@
 #include <QTime>
 
 using boost::asio::ip::tcp;
+using boost::asio::deadline_timer;
 
 class IOServer;
 
@@ -39,15 +40,16 @@ public:
     void stop();
 
     //读取消息头
-    void handle_read_head(qtMessage* pMsg, size_t nTransSize, const boost::system::error_code& error);
+    void handle_read_head(size_t nTransSize, const boost::system::error_code& error);
 
     //读取消息体
-    void handle_read_body(qtMessage* pMsg, size_t nTransSize, const boost::system::error_code& error);
+    void handle_read_body(size_t nTransSize, const boost::system::error_code& error);
 
 
     void handle_write(qtMessage* pMsg, size_t nTransSize, const boost::system::error_code& error);
 
 
+    void handle_deadline();
 
 
 private:
@@ -56,6 +58,7 @@ private:
 
     // The socket used to communicate with the client.
     tcp::socket socket_;
+    deadline_timer recv_timeout_;
 
     // Buffer used to store data received from the client.
     //boost::array<char, 1024> data_;
@@ -65,10 +68,11 @@ private:
 
     boost::mutex        m_mutex;
 
+    qtMessage* m_pMessage;
+
 public:
     int m_nIndex;
     static int m_sCount;
 
     IOServer* pServer_;
-    QTime time_;
 };

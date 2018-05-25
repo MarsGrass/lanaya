@@ -54,16 +54,12 @@ IOSession* IOServer::GetSession()
         session->SetServer(this);
 
         qDebug() << "create a new sesssion index:" << session->m_nIndex;
-
-        listUseSession.push_back(session);
         return session;
     }
     qDebug() << "sesssion pool size: " << listSession.size() << "--";
     IOSession* session = listSession.front();
     qDebug() << session->m_nIndex;
     listSession.pop_front();
-
-    listUseSession.push_back(session);
 
     return session;
 }
@@ -80,8 +76,6 @@ void IOServer::ReleaseSession(IOSession* session)
     qDebug() << session->m_nIndex;
     session->socket().close();
     listSession.push_back(session);
-
-    listUseSession.removeOne(session);
 }
 
 
@@ -167,8 +161,6 @@ void IOServer::run()
         , &io_service_pool_)));
     work_thread_.reset(new boost::thread(boost::bind(&IOServicePool::run
         , &io_service_work_pool_)));
-
-    session_thread_ = new boost::thread(boost::bind(&IOServer::RunSessionList, this));
 }
 
 void IOServer::stop()
@@ -180,30 +172,3 @@ void IOServer::stop()
     work_thread_->join();
 }
 
-void IOServer::RunSessionList()
-{
-    while(true)
-    {
-        //定时睡眠
-        boost::xtime xt;
-        boost::xtime_get(&xt, boost::TIME_UTC_);
-        xt.sec += 60;
-        boost::thread::sleep(xt);
-
-        IOSession* sessionTmp = NULL;
-
-        QTime time__ = QTime::currentTime();
-        foreach (IOSession* session, listUseSession) {
-            if(session->time_.secsTo(time__)  > 120 ){
-                sessionTmp = session;
-                break;
-            }
-        }
-
-        if(sessionTmp)
-        {
-            sessionTmp->stop();
-        }
-
-    }
-}

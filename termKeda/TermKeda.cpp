@@ -202,7 +202,7 @@ int CTermKeda::DataReport(qtMessage* pMsg, QByteArray& reply)
 
         QString str = datetime.toString("yyyy-MM-dd HH-mm-ss");
 
-        qDebug() << strData1 << strData2 << strData3 << strData4 << str;
+        qDebug() << strData1 << strData2 << strData3 << strData4 << aData4 << str;
 
         QtMysqlObj* pMysqlObj = mysql_->GetMysqlObj();
         if(pMysqlObj)
