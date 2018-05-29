@@ -114,11 +114,13 @@ void IOServer::handle_accept(IOSession* new_session, const boost::system::error_
         else
         {
             //acceptor_.close();
+            qDebug() << "handle_accept session is is NULL";
         }
     }
     else
     {
-        //ReleaseSession(new_session);
+        qDebug() << "accept error";
+        acceptor_.close();
     }
 }
 
